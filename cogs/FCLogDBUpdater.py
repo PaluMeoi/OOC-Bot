@@ -61,10 +61,14 @@ class FCLogDBUpdater(commands.Cog):
                 pass
 
         async with aiohttp.ClientSession() as session:
+            WebhookConfig = StatusSetting['WebhookConfig']
+            hook_avatar = WebhookConfig['Avatar']
+            hook_name = WebhookConfig['Name']
+            print(hook_name)
             for hook in webhooks:
                 try:
                     webhook = discord.Webhook.from_url(hook, adapter=discord.AsyncWebhookAdapter(session))
-                    await webhook.send(embed=embed)
+                    await webhook.send(embed=embed, avatar_url=hook_avatar, username=hook_name)
                 finally:
                     pass
 

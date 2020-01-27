@@ -42,15 +42,17 @@ class FC(commands.Cog):
             results = await client.character_by_id(id)
             return results
 
-    def _create_iam_embed(self, character, verified):
+    def _create_iam_embed(self,ctx: discord.Message, character, verified):
         name = character['Name']
         id = character['ID']
         avatar = character['Avatar']
         lodestone = '[{name}](https://na.finalfantasyxiv.com/lodestone/character/{id}/)'.format(name=name, id=id)
+        discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=ctx.author.id, hash=ctx.author.avatar)
         embed = discord.Embed(title=name, color=discord.Colour.green())
         embed.add_field(name='Lodestone', value=lodestone)
         embed.add_field(name='World', value=character['Server'])
         embed.set_thumbnail(url=avatar)
+        embed.set_footer(text=ctx.author.nick, icon_url=discord_avatar)
 
         if verified:
             verified_field = '\u2705'
@@ -64,6 +66,7 @@ class FC(commands.Cog):
     async def iam(self, ctx: discord.Message, *args):
         char_embed = None
         verification_token = str(uuid.uuid4()).replace('-', '')
+        # print(ctx.author.avatar)
 
         # If a world, forename and surname are provided
         if len(args) == 3:
@@ -99,13 +102,13 @@ class FC(commands.Cog):
                       'Token': verification_token,
                       'Timestamp': datetime.utcnow()}
             self.discordcoll.insert_one(record)
-            char_embed = self._create_iam_embed(character, False)
+            char_embed = self._create_iam_embed(ctx, character, False)
 
         elif current_character is not None:
             # Check if the character is the same
             if character_id == current_character['CharacterID']:
                 self.discordcoll.update_one({'DiscordID': ctx.author.id}, {'$set': {'Timestamp': datetime.utcnow()}})
-                char_embed = self._create_iam_embed(character, current_character['Verified'])
+                char_embed = self._create_iam_embed(ctx, character, current_character['Verified'])
 
             # If the character is not the same
             else:
@@ -115,7 +118,7 @@ class FC(commands.Cog):
                           'Verified': False
                           }
                 self.discordcoll.update_one({'DiscordID': ctx.author.id}, {'$set': record})
-                char_embed = self._create_iam_embed(character, False)
+                char_embed = self._create_iam_embed(ctx, character, False)
 
         if char_embed is not False:
             await ctx.send(embed=char_embed, delete_after=20)
