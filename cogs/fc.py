@@ -66,7 +66,7 @@ class FC(commands.Cog):
     async def iam(self, ctx: discord.Message, *args):
         char_embed = None
         verification_token = str(uuid.uuid4()).replace('-', '')
-        print(ctx.author.avatar)
+        # print(ctx.author.avatar)
 
         # If a world, forename and surname are provided
         if len(args) == 3:
