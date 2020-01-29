@@ -2,6 +2,7 @@
 
 import os
 import uuid
+import re
 from datetime import datetime
 
 import aiohttp
@@ -52,7 +53,8 @@ class FC(commands.Cog):
         embed.add_field(name='Lodestone', value=lodestone)
         embed.add_field(name='World', value=character['Server'])
         embed.set_thumbnail(url=avatar)
-        embed.set_footer(text=ctx.author.nick, icon_url=discord_avatar)
+        if ctx is not None:
+            embed.set_footer(text=ctx.author.nick, icon_url=discord_avatar) # TODO: Adjust so a user is passed instead of message context
 
         if verified:
             verified_field = '\u2705'
@@ -167,15 +169,26 @@ class FC(commands.Cog):
 
     @commands.command()
     async def whois(self, ctx:discord.Message, *args):
+        print(args)
         if len(args) == 0:
             user = ctx.author.id
-        elif len(ctx.mentions) == 1:
-            user = ctx.mentions[0].id
+        elif len(args) == 1:
+            m = re.search('(\d+)', args[0])
+            user = int(m.group(0))
         elif len(args) == 3:
-            pass # TODO: Add functionality for reverse search
+            pass  # TODO: Add functionality for reverse search
         else:
-            # TODO: Send help message and break
+            pass  # TODO: Send help message and break
 
+        # Get Member's verified status
+        member = self.discordcoll.find_one({'DiscordID': user})
+        verified = member['Verified']
+
+        # Get the member's character id
+        character_id = self._get_char_by_discord(user)
+        character = await self._character_byid(character_id)
+        embed = self._create_iam_embed(character, None, verified)
+        ctx.send(embed=embed)
 
 
 
