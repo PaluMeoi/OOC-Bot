@@ -43,7 +43,7 @@ class FC(commands.Cog):
             results = await client.character_by_id(id)
             return results
 
-    def _create_iam_embed(self,ctx: discord.Message, character, verified):
+    def _create_iam_embed(self, ctx, character, verified, memberid=None):
         name = character['Name']
         id = character['ID']
         avatar = character['Avatar']
@@ -52,10 +52,16 @@ class FC(commands.Cog):
         embed.add_field(name='Lodestone', value=lodestone)
         embed.add_field(name='World', value=character['Server'])
         embed.set_thumbnail(url=avatar)
-        if ctx is not None:
+        if (ctx is not None) and (memberid is not None):
+            member = ctx.guild.get_member(memberid)
+            discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=memberid,
+                                                                                         hash=member.avatar)
+            embed.set_footer(text=member.nick, icon_url=discord_avatar)
+        elif ctx is not None:
             discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=ctx.author.id,
                                                                                          hash=ctx.author.avatar)
             embed.set_footer(text=ctx.author.nick, icon_url=discord_avatar) # TODO: Adjust so a user is passed instead of message context
+
 
         if verified:
             verified_field = '\u2705'
@@ -189,7 +195,7 @@ class FC(commands.Cog):
             # Get the member's character id
             character_id = self._get_char_by_discord(user)
             character = await self._character_byid(character_id)
-            embed = self._create_iam_embed(None, character['Character'], verified)
+            embed = self._create_iam_embed(ctx, character['Character'], verified, member['DiscordID'])
             await ctx.send(embed=embed)
         else:
             message = "No character associated with the user."
