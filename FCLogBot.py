@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or('fc!'), description
 
 extensions = [
     'cogs.fc'
-    , 'cogs.FCLogDBUpdater'
+    # , 'cogs.FCLogDBUpdater' TODO: Re-enable before releasing
 ]
 
 

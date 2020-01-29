@@ -62,6 +62,11 @@ class FC(commands.Cog):
         embed.add_field(name='Verified', value=verified_field)
         return embed
 
+    def _get_char_by_discord(self, discordID):
+        member = self.discordcoll.find_one({'DiscordID': discordID})
+        character_ID = member['CharacterID']
+        return character_ID
+
     @commands.command()
     async def iam(self, ctx: discord.Message, *args):
         char_embed = None
@@ -159,6 +164,19 @@ class FC(commands.Cog):
             await ctx.message.delete()
         finally:
             pass
+
+    @commands.command()
+    async def whois(self, ctx:discord.Message, *args):
+        if len(args) == 0:
+            user = ctx.author.id
+        elif len(ctx.mentions) == 1:
+            user = ctx.mentions[0].id
+        elif len(args) == 3:
+            pass # TODO: Add functionality for reverse search
+        else:
+            # TODO: Send help message and break
+
+
 
 
 if __name__ == "__main__":
