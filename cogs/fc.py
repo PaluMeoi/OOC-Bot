@@ -48,12 +48,13 @@ class FC(commands.Cog):
         id = character['ID']
         avatar = character['Avatar']
         lodestone = '[{name}](https://na.finalfantasyxiv.com/lodestone/character/{id}/)'.format(name=name, id=id)
-        discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=ctx.author.id, hash=ctx.author.avatar)
         embed = discord.Embed(title=name, color=discord.Colour.green())
         embed.add_field(name='Lodestone', value=lodestone)
         embed.add_field(name='World', value=character['Server'])
         embed.set_thumbnail(url=avatar)
         if ctx is not None:
+            discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=ctx.author.id,
+                                                                                         hash=ctx.author.avatar)
             embed.set_footer(text=ctx.author.nick, icon_url=discord_avatar) # TODO: Adjust so a user is passed instead of message context
 
         if verified:
@@ -169,7 +170,7 @@ class FC(commands.Cog):
 
     @commands.command()
     async def whois(self, ctx:discord.Message, *args):
-        print(args)
+        await ctx.trigger_typing()
         if len(args) == 0:
             user = ctx.author.id
         elif len(args) == 1:
@@ -182,13 +183,18 @@ class FC(commands.Cog):
 
         # Get Member's verified status
         member = self.discordcoll.find_one({'DiscordID': user})
-        verified = member['Verified']
+        if member is not None:
+            verified = member['Verified']
 
-        # Get the member's character id
-        character_id = self._get_char_by_discord(user)
-        character = await self._character_byid(character_id)
-        embed = self._create_iam_embed(character, None, verified)
-        ctx.send(embed=embed)
+            # Get the member's character id
+            character_id = self._get_char_by_discord(user)
+            character = await self._character_byid(character_id)
+            embed = self._create_iam_embed(None, character['Character'], verified)
+            await ctx.send(embed=embed)
+        else:
+            message = "No character associated with the user."
+            await ctx.send(message, delete_after=20)
+            await ctx.message.delete()
 
 
 
