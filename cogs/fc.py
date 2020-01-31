@@ -56,12 +56,13 @@ class FC(commands.Cog):
             member = ctx.guild.get_member(memberid)
             discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=memberid,
                                                                                          hash=member.avatar)
-            embed.set_footer(text=member.nick, icon_url=discord_avatar)
+            # footer = '{discord}#{discrim}'.format(discord=member.nick, discrim=ctx.author.discriminator)
+            embed.set_footer(text=member.display_name, icon_url=discord_avatar)
         elif ctx is not None:
             discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=ctx.author.id,
                                                                                          hash=ctx.author.avatar)
-            footer = '{nick} ({discord})'.format(nick=ctx.author.nick, discord=ctx.author.name)
-            embed.set_footer(text=ctx.author.nick, icon_url=discord_avatar) # TODO: Adjust so a user is passed instead of message context
+            # footer = '{discord}#{discrim}'.format(discord=ctx.author.nick, discrim=ctx.author.discriminator)
+            embed.set_footer(text=ctx.author.disply_name, icon_url=discord_avatar) # TODO: Adjust so a user is passed instead of message context
 
 
         if verified:
