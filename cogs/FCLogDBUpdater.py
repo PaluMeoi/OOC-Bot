@@ -20,12 +20,15 @@ fc_id = os.environ['FC_ID']
 
 class FCLogDBUpdater(commands.Cog):
     def __init__(self, bot):
+        self.statuscoll = db['StatusLog']
+        self.namecoll = db['Names']
+        self.membercoll = db['Members']
+        self.configcoll = db['Config']
         self.bot = bot
         self.index = 0
         self.printer.start()
 
     async def send_update(self, title, color, character, details=None):
-        self.configcoll = db['Config']
 
         StatusSetting = self.configcoll.find_one({'Setting': 'StatusUpdates'})
         channels = StatusSetting['Channels']
@@ -64,7 +67,6 @@ class FCLogDBUpdater(commands.Cog):
             WebhookConfig = StatusSetting['WebhookConfig']
             hook_avatar = WebhookConfig['Avatar']
             hook_name = WebhookConfig['Name']
-            print(hook_name)
             for hook in webhooks:
                 try:
                     webhook = discord.Webhook.from_url(hook, adapter=discord.AsyncWebhookAdapter(session))
@@ -78,9 +80,6 @@ class FCLogDBUpdater(commands.Cog):
             fc = await client.freecompany_by_id(fc_id, include_freecompany_members=True)
             raw_members = fc['FreeCompanyMembers']
             self.time = datetime.utcnow()
-            self.membercoll = db['Members']
-            self.namecoll = db['Names']
-            self.statuscoll = db['StatusLog']
             members = list()
             new_members = list()
             memberids = list()

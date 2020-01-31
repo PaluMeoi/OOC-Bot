@@ -60,6 +60,7 @@ class FC(commands.Cog):
         elif ctx is not None:
             discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=ctx.author.id,
                                                                                          hash=ctx.author.avatar)
+            footer = '{nick} ({discord})'.format(nick=ctx.author.nick, discord=ctx.author.name)
             embed.set_footer(text=ctx.author.nick, icon_url=discord_avatar) # TODO: Adjust so a user is passed instead of message context
 
 
@@ -174,21 +175,32 @@ class FC(commands.Cog):
         finally:
             pass
 
-    @commands.command()
+    @commands.command(aliases=['whoami'])
     async def whois(self, ctx:discord.Message, *args):
         await ctx.trigger_typing()
         if len(args) == 0:
             user = ctx.author.id
+            member = self.discordcoll.find_one({'DiscordID': user})
         elif len(args) == 1:
             m = re.search('(\d+)', args[0])
             user = int(m.group(0))
+            member = self.discordcoll.find_one({'DiscordID': user})
         elif len(args) == 3:
-            pass  # TODO: Add functionality for reverse search
+            try:
+                world, firstname, surname = args
+                # Find the discord member with the given character
+                character_result = await self._searchcharacter(world, firstname, surname)
+                character_id = int(character_result['ID'])
+                member = self.discordcoll.find_one({'CharacterID': character_id})
+                if member is not None:
+                    user = member['DiscordID']
+            finally:
+                pass
         else:
-            pass  # TODO: Send help message and break
+            # TODO: Send help message and break
+            ctx.send("No character found associated with the user or bad arguments passed.")
 
         # Get Member's verified status
-        member = self.discordcoll.find_one({'DiscordID': user})
         if member is not None:
             verified = member['Verified']
 
@@ -198,8 +210,11 @@ class FC(commands.Cog):
             embed = self._create_iam_embed(ctx, character['Character'], verified, member['DiscordID'])
             await ctx.send(embed=embed)
         else:
-            message = "No character associated with the user."
-            await ctx.send(message, delete_after=20)
+            character = await self._character_byid(character_id)
+            embed = self._create_iam_embed(None, character['Character'], False, None)
+            await ctx.send(embed=embed)
+            # message = "No character associated with the user."
+            # await ctx.send(message, delete_after=20)
             await ctx.message.delete()
 
 
