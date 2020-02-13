@@ -2,6 +2,7 @@
 
 import os
 import uuid
+import re
 from datetime import datetime
 
 import aiohttp
@@ -42,17 +43,27 @@ class FC(commands.Cog):
             results = await client.character_by_id(id)
             return results
 
-    def _create_iam_embed(self,ctx: discord.Message, character, verified):
+    def _create_iam_embed(self, ctx, character, verified, memberid=None):
         name = character['Name']
         id = character['ID']
         avatar = character['Avatar']
         lodestone = '[{name}](https://na.finalfantasyxiv.com/lodestone/character/{id}/)'.format(name=name, id=id)
-        discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=ctx.author.id, hash=ctx.author.avatar)
         embed = discord.Embed(title=name, color=discord.Colour.green())
         embed.add_field(name='Lodestone', value=lodestone)
         embed.add_field(name='World', value=character['Server'])
         embed.set_thumbnail(url=avatar)
-        embed.set_footer(text=ctx.author.nick, icon_url=discord_avatar)
+        if (ctx is not None) and (memberid is not None):
+            member = ctx.guild.get_member(memberid)
+            discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=memberid,
+                                                                                         hash=member.avatar)
+            # footer = '{discord}#{discrim}'.format(discord=member.nick, discrim=ctx.author.discriminator)
+            embed.set_footer(text=member.display_name, icon_url=discord_avatar)
+        elif ctx is not None:
+            discord_avatar = 'https://cdn.discordapp.com/avatars/{id}/{hash}.png'.format(id=ctx.author.id,
+                                                                                         hash=ctx.author.avatar)
+            # footer = '{discord}#{discrim}'.format(discord=ctx.author.nick, discrim=ctx.author.discriminator)
+            embed.set_footer(text=ctx.author.disply_name, icon_url=discord_avatar) # TODO: Adjust so a user is passed instead of message context
+
 
         if verified:
             verified_field = '\u2705'
@@ -61,6 +72,11 @@ class FC(commands.Cog):
 
         embed.add_field(name='Verified', value=verified_field)
         return embed
+
+    def _get_char_by_discord(self, discordID):
+        member = self.discordcoll.find_one({'DiscordID': discordID})
+        character_ID = member['CharacterID']
+        return character_ID
 
     @commands.command()
     async def iam(self, ctx: discord.Message, *args):
@@ -159,6 +175,49 @@ class FC(commands.Cog):
             await ctx.message.delete()
         finally:
             pass
+
+    @commands.command(aliases=['whoami'])
+    async def whois(self, ctx:discord.Message, *args):
+        await ctx.trigger_typing()
+        if len(args) == 0:
+            user = ctx.author.id
+            member = self.discordcoll.find_one({'DiscordID': user})
+        elif len(args) == 1:
+            m = re.search('(\d+)', args[0])
+            user = int(m.group(0))
+            member = self.discordcoll.find_one({'DiscordID': user})
+        elif len(args) == 3:
+            try:
+                world, firstname, surname = args
+                # Find the discord member with the given character
+                character_result = await self._searchcharacter(world, firstname, surname)
+                character_id = int(character_result['ID'])
+                member = self.discordcoll.find_one({'CharacterID': character_id})
+                if member is not None:
+                    user = member['DiscordID']
+            finally:
+                pass
+        else:
+            # TODO: Send help message and break
+            ctx.send("No character found associated with the user or bad arguments passed.")
+
+        # Get Member's verified status
+        if member is not None:
+            verified = member['Verified']
+
+            # Get the member's character id
+            character_id = self._get_char_by_discord(user)
+            character = await self._character_byid(character_id)
+            embed = self._create_iam_embed(ctx, character['Character'], verified, member['DiscordID'])
+            await ctx.send(embed=embed)
+        else:
+            character = await self._character_byid(character_id)
+            embed = self._create_iam_embed(None, character['Character'], False, None)
+            await ctx.send(embed=embed)
+            # message = "No character associated with the user."
+            # await ctx.send(message, delete_after=20)
+            await ctx.message.delete()
+
 
 
 if __name__ == "__main__":

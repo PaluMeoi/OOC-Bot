@@ -6,8 +6,8 @@ from discord.ext import commands
 logging.basicConfig(level=logging.INFO)
 
 description = """FC Log Bot"""
-
-bot = commands.Bot(command_prefix=commands.when_mentioned_or('fc!'), description=description)
+prefix = os.environ['PREFIX']
+bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix), description=description)
 
 extensions = [
     'cogs.fc'
